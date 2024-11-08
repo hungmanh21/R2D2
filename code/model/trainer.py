@@ -1036,10 +1036,9 @@ def main():
             if not isinstance(val, list):
                 option[key] = [val]
 
-        best_permutation = None
-        best_metric = 0
-
         for permutation in ParameterGrid(option):
+            best_permutation = None
+            best_metric = 0
             current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
             permutation['output_dir'] = os.path.join(
                 permutation['base_output_dir'],
@@ -1074,7 +1073,7 @@ def main():
         current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
         best_permutation['output_dir'] = os.path.join(
             best_permutation['base_output_dir'],
-            f"{current_time}__Test__{uuid.uuid4()[:4]}_{best_permutation['path_length']}_{best_permutation['beta']}_{best_permutation['test_rollouts']}_{best_permutation['Lambda']}"
+            f"{current_time}__Test__{str(uuid.uuid4())[:4]}_{best_permutation['path_length']}_{best_permutation['beta']}_{best_permutation['test_rollouts']}_{best_permutation['Lambda']}"
         )
         best_permutation['old_model_dir'] = best_permutation['model_dir']
         best_permutation['model_dir'] = os.path.join(best_permutation['output_dir'], 'model/')
@@ -1100,7 +1099,7 @@ def main():
         current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
         option['output_dir'] = os.path.join(
             option['base_output_dir'],
-            f"{current_time}__Test__{uuid.uuid4()[:4]}_{option['path_length']}_{option['beta']}_{option['test_rollouts']}_{option['Lambda']}"
+            f"{current_time}__Test__{str(uuid.uuid4())[:4]}_{option['path_length']}_{option['beta']}_{option['test_rollouts']}_{option['Lambda']}"
         )
         option['model_dir'] = os.path.join(option['output_dir'], 'model/')
         os.makedirs(option['output_dir'], exist_ok=True)
