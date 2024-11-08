@@ -1074,6 +1074,7 @@ def main():
             trainer = Trainer(permutation, best_metric)
             trainer.initialize_pretrained_embeddings()
             trainer.train()
+            print("Training complete")
 
             if trainer.best_metric > best_metric:
                 best_metric = trainer.best_metric
