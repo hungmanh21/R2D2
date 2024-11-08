@@ -1039,23 +1039,34 @@ def main():
         for permutation in ParameterGrid(option):
             best_permutation = None
             best_metric = 0
-            current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
-            permutation['output_dir'] = os.path.join(
-                permutation['base_output_dir'],
-                f"{current_time}__{str(uuid.uuid4())[:4]}_{permutation['path_length']}_{permutation['beta']}_{permutation['test_rollouts']}_{permutation['Lambda']}"
-            )
-            permutation['model_dir'] = os.path.join(permutation['output_dir'], 'model/')
-            os.makedirs(permutation['output_dir'], exist_ok=True)
-            os.makedirs(permutation['model_dir'], exist_ok=True)
 
-            with open(os.path.join(permutation['output_dir'], 'config.txt'), 'w') as out:
+            current_time = datetime.datetime.now()
+            current_time = current_time.strftime('%y_%b_%d__%H_%M_%S')
+            permutation['output_dir'] = permutation['base_output_dir'] + '/' + str(current_time) + '__' + str(uuid.uuid4())[
+                                                                                                      :4] + '_' + str(
+                permutation['path_length']) + '_' + str(permutation['beta']) + '_' + str(
+                permutation['test_rollouts']) + '_' + str(
+                permutation['Lambda'])
+
+            permutation['model_dir'] = permutation['output_dir'] + '/' + 'model/'
+
+            permutation['load_model'] = (permutation['load_model'] == 1)
+
+            ##Logger##
+            os.makedirs(permutation['output_dir'])
+            os.mkdir(permutation['model_dir'])
+            with open(permutation['output_dir'] + '/config.txt', 'w') as out:
                 pprint(permutation, stream=out)
 
+            # print and return
+            maxLen = max([len(ii) for ii in permutation.keys()])
+            fmtString = '\t%' + str(maxLen) + 's : %s'
+            print('Arguments:')
+            for keyPair in sorted(permutation.items()): print(fmtString % keyPair)
             logger.removeHandler(logfile)
-            logfile = logging.FileHandler(os.path.join(permutation['output_dir'], 'log.txt'), 'w')
+            logfile = logging.FileHandler(permutation['output_dir'] + '/log.txt', 'w')
             logfile.setFormatter(fmt)
             logger.addHandler(logfile)
-
             permutation['relation_vocab'] = relation_vocab
             permutation['entity_vocab'] = entity_vocab
             permutation['mid_to_name'] = mid_to_name
