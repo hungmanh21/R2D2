@@ -900,7 +900,7 @@ def main():
     logger.info('Done..')
     logger.info('Total number of entities {}'.format(len(entity_vocab)))
     logger.info('Total number of relations {}'.format(len(relation_vocab)))
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = False
     config.log_device_placement = False
 
