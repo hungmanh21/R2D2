@@ -1043,7 +1043,7 @@ def main():
             current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
             permutation['output_dir'] = os.path.join(
                 permutation['base_output_dir'],
-                f"{current_time}__{uuid.uuid4()[:4]}_{permutation['path_length']}_{permutation['beta']}_{permutation['test_rollouts']}_{permutation['Lambda']}"
+                f"{current_time}__{str(uuid.uuid4())[:4]}_{permutation['path_length']}_{permutation['beta']}_{permutation['test_rollouts']}_{permutation['Lambda']}"
             )
             permutation['model_dir'] = os.path.join(permutation['output_dir'], 'model/')
             os.makedirs(permutation['output_dir'], exist_ok=True)
