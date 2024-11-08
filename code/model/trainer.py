@@ -76,7 +76,7 @@ class Trainer(tf.keras.Model):
         self.baseline_1 = ReactiveBaseline(l=self.Lambda)
         self.baseline_2 = ReactiveBaseline(l=self.Lambda)
         self.optimizer_judge = tf.keras.optimizers.Adam(
-            self.learning_rate_judge_ph)
+            self.learning_rate_judge)
         self.optimizer_agents = tf.keras.optimizers.Adam(
             self.learning_rate_agents)
 
