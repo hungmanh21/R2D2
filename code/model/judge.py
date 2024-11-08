@@ -34,37 +34,37 @@ class Judge(tf.keras.Model):
         # Define embeddings
         self.define_embeddings()
 
-def define_embeddings(self):
-    '''
-    Creates and adds the embeddings for the KG's relations and entities to the graph, as well as assign operations
-    needed when using pre-trained embeddings.
-
-    :return: None
-    '''
-    # Relation embeddings
-    with tf.name_scope("judge"):
-        self.relation_embedding_placeholder = tf.compat.v1.placeholder(tf.float32,
-                                                                       [self.action_vocab_size, self.embedding_size])
-
-        self.relation_lookup_table = self.add_weight(
-            name="relation_lookup_table",
-            shape=[self.action_vocab_size, self.embedding_size],
-            initializer=tf.keras.initializers.GlorotUniform(),
-            trainable=self.train_relations
-        )
-        self.relation_embedding_init = tf.compat.v1.assign(self.relation_lookup_table, self.relation_embedding_placeholder)
-
-    # Entity embeddings
-    with tf.name_scope("judge"):
-        self.entity_embedding_placeholder = tf.compat.v1.placeholder(tf.float32,
-                                                                     [self.entity_vocab_size, self.embedding_size])
-        self.entity_lookup_table = self.add_weight(
-            name="entity_lookup_table",
-            shape=[self.entity_vocab_size, self.embedding_size],
-            initializer=self.entity_initializer,
-            trainable=self.train_entities
-        )
-        self.entity_embedding_init = tf.compat.v1.assign(self.entity_lookup_table, self.entity_embedding_placeholder)
+    def define_embeddings(self):
+        '''
+        Creates and adds the embeddings for the KG's relations and entities to the graph, as well as assign operations
+        needed when using pre-trained embeddings.
+    
+        :return: None
+        '''
+        # Relation embeddings
+        with tf.name_scope("judge"):
+            self.relation_embedding_placeholder = tf.compat.v1.placeholder(tf.float32,
+                                                                           [self.action_vocab_size, self.embedding_size])
+    
+            self.relation_lookup_table = self.add_weight(
+                name="relation_lookup_table",
+                shape=[self.action_vocab_size, self.embedding_size],
+                initializer=tf.keras.initializers.GlorotUniform(),
+                trainable=self.train_relations
+            )
+            self.relation_embedding_init = tf.compat.v1.assign(self.relation_lookup_table, self.relation_embedding_placeholder)
+    
+        # Entity embeddings
+        with tf.name_scope("judge"):
+            self.entity_embedding_placeholder = tf.compat.v1.placeholder(tf.float32,
+                                                                         [self.entity_vocab_size, self.embedding_size])
+            self.entity_lookup_table = self.add_weight(
+                name="entity_lookup_table",
+                shape=[self.entity_vocab_size, self.embedding_size],
+                initializer=self.entity_initializer,
+                trainable=self.train_entities
+            )
+            self.entity_embedding_init = tf.compat.v1.assign(self.entity_lookup_table, self.entity_embedding_placeholder)
 
     def set_labels(self, labels):
         '''
