@@ -967,30 +967,61 @@ class Trainer(tf.keras.Model):
 
 
 
+import tensorflow as tf
+import datetime
+import json
+import logging
+import os
+import uuid
+from sklearn.model_selection import ParameterGrid
+from pprint import pprint
+
+logger = logging.getLogger(__name__)
+
+class Trainer:
+    def __init__(self, config, best_metric):
+        # Initialize with configuration and best metric
+        self.config = config
+        self.best_metric = best_metric
+        self.best_threshold = None
+
+    def initialize_pretrained_embeddings(self):
+        # Method to initialize pretrained embeddings if necessary
+        pass
+
+    def train(self):
+        # Implement the training logic here
+        pass
+
+    def test(self, use_fixed_false_facts=False, calculate_best_threshold=True, best_threshold=None):
+        # Implement the testing logic here
+        pass
+
+    def initialize(self, model_path=None):
+        # Load model weights if path provided, or initialize model
+        if model_path:
+            self.model = tf.keras.models.load_model(model_path)
+        else:
+            self.model = self.build_model()
+
+    def build_model(self):
+        # Placeholder for building a model
+        return tf.keras.Sequential([])  # Replace with actual model construction
+
 def main():
     '''
     Runs an experiment or evaluates a pretrained model based on the value of the load_model option.
-
-    It is assumed that there is only one value for each hyperparameter load_model is 1 (testing).
-    For training, if at least one hyperparameter has more than one value, a grid search over the whole range is performed.
-    In that case, trained models are only saved if they outperform the best performing model in the development set. Finally,
-    the best performing model at the end of the sweep is tested on the test set.
-
-    :return: None.
     '''
-
     option = read_options()
     logger.setLevel(logging.INFO)
-    fmt = logging.Formatter('%(asctime)s: [ %(message)s ]',
-                            '%m/%d/%Y %I:%M:%S %p')
+    fmt = logging.Formatter('%(asctime)s: [ %(message)s ]', '%m/%d/%Y %I:%M:%S %p')
     console = logging.StreamHandler()
     console.setFormatter(fmt)
     logfile = None
     logger.addHandler(console)
-    # read the vocab files, it will be used by many classes hence global scope
+
     logger.info('reading vocab files...')
-    relation_vocab = json.load(
-        open(option['vocab_dir'] + '/relation_vocab.json'))
+    relation_vocab = json.load(open(option['vocab_dir'] + '/relation_vocab.json'))
     entity_vocab = json.load(open(option['vocab_dir'] + '/entity_vocab.json'))
     mid_to_name = json.load(open(option['vocab_dir'] + '/fb15k_names.json')) \
         if os.path.isfile(option['vocab_dir'] + '/fb15k_names.json') else None
@@ -998,9 +1029,6 @@ def main():
     logger.info('Done..')
     logger.info('Total number of entities {}'.format(len(entity_vocab)))
     logger.info('Total number of relations {}'.format(len(relation_vocab)))
-    config = tf.compat.v1.ConfigProto()
-    config.gpu_options.allow_growth = False
-    config.log_device_placement = False
 
     if not option['load_model']:
 
@@ -1008,141 +1036,91 @@ def main():
             if not isinstance(val, list):
                 option[key] = [val]
 
+        best_permutation = None
+        best_metric = 0
+
         for permutation in ParameterGrid(option):
-            best_permutation = None
-            best_metric = 0
+            current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
+            permutation['output_dir'] = os.path.join(
+                permutation['base_output_dir'],
+                f"{current_time}__{uuid.uuid4()[:4]}_{permutation['path_length']}_{permutation['beta']}_{permutation['test_rollouts']}_{permutation['Lambda']}"
+            )
+            permutation['model_dir'] = os.path.join(permutation['output_dir'], 'model/')
+            os.makedirs(permutation['output_dir'], exist_ok=True)
+            os.makedirs(permutation['model_dir'], exist_ok=True)
 
-            current_time = datetime.datetime.now()
-            current_time = current_time.strftime('%y_%b_%d__%H_%M_%S')
-            permutation['output_dir'] = permutation['base_output_dir'] + '/' + str(current_time) + '__' + str(uuid.uuid4())[
-                :4] + '_' + str(
-                permutation['path_length']) + '_' + str(permutation['beta']) + '_' + str(
-                permutation['test_rollouts']) + '_' + str(
-                permutation['Lambda'])
-
-            permutation['model_dir'] = permutation['output_dir'] + \
-                '/' + 'model/'
-
-            permutation['load_model'] = (permutation['load_model'] == 1)
-
-            ## Logger##
-            os.makedirs(permutation['output_dir'])
-            os.mkdir(permutation['model_dir'])
-            with open(permutation['output_dir'] + '/config.txt', 'w') as out:
+            with open(os.path.join(permutation['output_dir'], 'config.txt'), 'w') as out:
                 pprint(permutation, stream=out)
 
-            # print and return
-            maxLen = max([len(ii) for ii in permutation.keys()])
-            fmtString = '\t%' + str(maxLen) + 's : %s'
-            print('Arguments:')
-            for keyPair in sorted(permutation.items()):
-                print(fmtString % keyPair)
             logger.removeHandler(logfile)
-            logfile = logging.FileHandler(
-                permutation['output_dir'] + '/log.txt', 'w')
+            logfile = logging.FileHandler(os.path.join(permutation['output_dir'], 'log.txt'), 'w')
             logfile.setFormatter(fmt)
             logger.addHandler(logfile)
+
             permutation['relation_vocab'] = relation_vocab
             permutation['entity_vocab'] = entity_vocab
             permutation['mid_to_name'] = mid_to_name
 
-            # Training
             trainer = Trainer(permutation, best_metric)
-            with tf.Session(config=config) as sess:
-                sess.run(trainer.initialize())
-                trainer.initialize_pretrained_embeddings(sess=sess)
-                trainer.train(sess)
+            trainer.initialize_pretrained_embeddings()
+            trainer.train()
 
-            if trainer.best_metric > best_metric or best_permutation == None:
-                best_acc = trainer.best_metric
+            if trainer.best_metric > best_metric:
+                best_metric = trainer.best_metric
                 best_threshold = trainer.best_threshold
                 best_permutation = permutation
-            tf.reset_default_graph()
 
         # Test best model
-        current_time = datetime.datetime.now()
-        current_time = current_time.strftime('%y_%b_%d__%H_%M_%S')
-        best_permutation['output_dir'] = best_permutation['base_output_dir'] + '/' + str(current_time) + '__Test__' + str(uuid.uuid4())[
-            :4] + '_' + str(
-            best_permutation['path_length']) + '_' + str(best_permutation['beta']) + '_' + str(
-            best_permutation['test_rollouts']) + '_' + str(
-            best_permutation['Lambda'])
-
+        current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
+        best_permutation['output_dir'] = os.path.join(
+            best_permutation['base_output_dir'],
+            f"{current_time}__Test__{uuid.uuid4()[:4]}_{best_permutation['path_length']}_{best_permutation['beta']}_{best_permutation['test_rollouts']}_{best_permutation['Lambda']}"
+        )
         best_permutation['old_model_dir'] = best_permutation['model_dir']
-        best_permutation['model_dir'] = best_permutation['output_dir'] + \
-            '/' + 'model/'
+        best_permutation['model_dir'] = os.path.join(best_permutation['output_dir'], 'model/')
 
-        best_permutation['load_model'] = (best_permutation['load_model'] == 1)
+        os.makedirs(best_permutation['output_dir'], exist_ok=True)
+        os.makedirs(best_permutation['model_dir'], exist_ok=True)
 
-        ## Logger##
-        os.makedirs(best_permutation['output_dir'])
-        os.mkdir(best_permutation['model_dir'])
-        with open(best_permutation['output_dir'] + '/config.txt', 'w') as out:
+        with open(os.path.join(best_permutation['output_dir'], 'config.txt'), 'w') as out:
             pprint(best_permutation, stream=out)
 
-        # print and return
-        maxLen = max([len(ii) for ii in best_permutation.keys()])
-        fmtString = '\t%' + str(maxLen) + 's : %s'
-        print('Arguments:')
-        for keyPair in sorted(best_permutation.items()):
-            if not keyPair[0].endswith('_vocab') and not keyPair[0] == 'mid_to_name':
-                print(fmtString % keyPair)
-        logger.removeHandler(logfile)
-        logfile = logging.FileHandler(
-            best_permutation['output_dir'] + '/log.txt', 'w')
-        logfile.setFormatter(fmt)
-        logger.addHandler(logfile)
-        trainer = Trainer(best_permutation, best_acc)
+        trainer = Trainer(best_permutation, best_metric)
+        trainer.initialize(os.path.join(best_permutation['old_model_dir'], "model.ckpt"))
+        trainer.test(calculate_best_threshold=False, best_threshold=best_threshold)
 
-        with tf.Session(config=config) as sess:
-            trainer.initialize(
-                best_permutation['old_model_dir'] + "model" + '.ckpt', sess)
-            trainer.test(sess, False, True, best_threshold)
     else:
         logger.info("Skipping training")
         logger.info("Loading model from {}".format(option["model_load_dir"]))
 
         for key, value in option.items():
-            if isinstance(value, list):
-                if len(value) == 1:
-                    option[key] = value[0]
-                else:
-                    raise ValueError(
-                        "Parameter {} has more than one value in the config file.".format(key))
+            if isinstance(value, list) and len(value) == 1:
+                option[key] = value[0]
 
-        current_time = datetime.datetime.now()
-        current_time = current_time.strftime('%y_%b_%d__%H_%M_%S')
-        option['output_dir'] = option['base_output_dir'] + '/' + str(current_time) + '__Test__' + str(
-            uuid.uuid4())[
-            :4] + '_' + str(
-            option['path_length']) + '_' + str(option['beta']) + '_' + str(
-            option['test_rollouts']) + '_' + str(
-            option['Lambda'])
+        current_time = datetime.datetime.now().strftime('%y_%b_%d__%H_%M_%S')
+        option['output_dir'] = os.path.join(
+            option['base_output_dir'],
+            f"{current_time}__Test__{uuid.uuid4()[:4]}_{option['path_length']}_{option['beta']}_{option['test_rollouts']}_{option['Lambda']}"
+        )
+        option['model_dir'] = os.path.join(option['output_dir'], 'model/')
+        os.makedirs(option['output_dir'], exist_ok=True)
+        os.makedirs(option['model_dir'], exist_ok=True)
 
-        option['model_dir'] = option['output_dir'] + '/' + 'model/'
-        os.makedirs(option['output_dir'])
-        os.mkdir(option['model_dir'])
-        with open(option['output_dir'] + '/config.txt', 'w') as out:
+        with open(os.path.join(option['output_dir'], 'config.txt'), 'w') as out:
             pprint(option, stream=out)
 
         logger.removeHandler(logfile)
-        logfile = logging.FileHandler(option['output_dir'] + '/log.txt', 'w')
+        logfile = logging.FileHandler(os.path.join(option['output_dir'], 'log.txt'), 'w')
         logfile.setFormatter(fmt)
         logger.addHandler(logfile)
+
         option['relation_vocab'] = relation_vocab
         option['entity_vocab'] = entity_vocab
         option['mid_to_name'] = mid_to_name
+
         trainer = Trainer(option, 0)
-
-        with tf.Session(config=config) as sess:
-            trainer.initialize(
-                option['model_load_dir'] + "model" + '.ckpt', sess)
-            if option['is_use_fixed_false_facts']:
-                best_threshold = trainer.test(sess, True, False)
-                trainer.test(sess, False, True, best_threshold=best_threshold)
-            else:
-                trainer.test(sess, False, True)
-
+        trainer.initialize(os.path.join(option['model_load_dir'], "model.ckpt"))
+        trainer.test(option.get('is_use_fixed_false_facts', False), calculate_best_threshold=True)
 
 if __name__ == '__main__':
     main()
