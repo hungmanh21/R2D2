@@ -81,7 +81,7 @@ class Trainer(object):
         '''
         if not seed is None:
             np.random.seed(seed)
-            tf.set_random_seed(seed)
+            tf.random.set_seed(seed)
             random.seed(seed)
 
 
