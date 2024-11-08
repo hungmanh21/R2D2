@@ -966,48 +966,6 @@ class Trainer(tf.keras.Model):
         return best_threshold
 
 
-
-import tensorflow as tf
-import datetime
-import json
-import logging
-import os
-import uuid
-from sklearn.model_selection import ParameterGrid
-from pprint import pprint
-
-logger = logging.getLogger(__name__)
-
-class Trainer:
-    def __init__(self, config, best_metric):
-        # Initialize with configuration and best metric
-        self.config = config
-        self.best_metric = best_metric
-        self.best_threshold = None
-
-    def initialize_pretrained_embeddings(self):
-        # Method to initialize pretrained embeddings if necessary
-        pass
-
-    def train(self):
-        # Implement the training logic here
-        pass
-
-    def test(self, use_fixed_false_facts=False, calculate_best_threshold=True, best_threshold=None):
-        # Implement the testing logic here
-        pass
-
-    def initialize(self, model_path=None):
-        # Load model weights if path provided, or initialize model
-        if model_path:
-            self.model = tf.keras.models.load_model(model_path)
-        else:
-            self.model = self.build_model()
-
-    def build_model(self):
-        # Placeholder for building a model
-        return tf.keras.Sequential([])  # Replace with actual model construction
-
 def main():
     '''
     Runs an experiment or evaluates a pretrained model based on the value of the load_model option.
