@@ -1030,8 +1030,16 @@ def main():
             permutation['mid_to_name'] = mid_to_name
 
             trainer = Trainer(permutation, best_metric)
-            trainer.initialize_pretrained_embeddings()
-            trainer.train()
+            with tf.compat.v1.Session(config=config) as sess:
+                sess.run(trainer.initialize())
+                trainer.initialize_pretrained_embeddings(sess=sess)
+                trainer.train(sess)
+
+            if trainer.best_metric > best_metric or best_permutation == None:
+                best_acc = trainer.best_metric
+                best_threshold = trainer.best_threshold
+                best_permutation = permutation
+            tf.compat.v1.reset_default_graph()
             print("Training complete")
 
             if trainer.best_metric > best_metric:
