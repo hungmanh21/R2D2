@@ -1,6 +1,6 @@
-data_input_dir="datasets/hetionet/"
+data_input_dir="/kaggle/input/polo-new-data/DDI_Polo_new/option1/"
 base_output_dir="output/hetionet/"
-vocab_dir="datasets/hetionet/vocab"
+vocab_dir="/kaggle/input/polo-new-data/DDI_Polo_new/option1/vocab/"
 seed=42
 is_use_fixed_false_facts=0
 use_entity_embeddings=1
